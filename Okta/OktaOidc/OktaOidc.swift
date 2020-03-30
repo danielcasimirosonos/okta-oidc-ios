@@ -41,7 +41,7 @@ public class OktaOidc: NSObject {
                 return
             }
             
-            let authStateManager = OktaOidcStateManager(authState: authState)
+            let authStateManager = OktaOidcStateManager(authState: authState, accountId: self?.configuration.accountId)
             callback(authStateManager, nil)
         }
     }
@@ -91,6 +91,7 @@ public class OktaOidc: NSObject {
 
     @objc public func authenticate(withSessionToken sessionToken: String,
                                    callback: @escaping ((OktaOidcStateManager?, Error?) -> Void)) {
+        let accountId = self.configuration.accountId
         OktaOidcAuthenticateTask(sessionToken: sessionToken, config: configuration, oktaAPI: OktaOidcRestApi())
         .run { authState, error in
             guard let authState = authState else {
@@ -98,7 +99,7 @@ public class OktaOidc: NSObject {
                 return
             }
             
-            let authStateManager = OktaOidcStateManager(authState: authState)
+            let authStateManager = OktaOidcStateManager(authState: authState, accountId: accountId)
             callback(authStateManager, nil)
         }
     }

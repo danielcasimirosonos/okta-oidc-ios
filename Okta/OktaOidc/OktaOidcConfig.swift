@@ -12,13 +12,15 @@
 
 public class OktaOidcConfig: NSObject, Codable {
     @objc public static let defaultPlistName = "Okta"
-    
+
     @objc public let clientId: String
     @objc public let issuer: String
     @objc public let scopes: String
     @objc public let redirectUri: URL
     @objc public let logoutRedirectUri: URL?
-    
+
+    @objc public let accountId: String?
+
     @objc public let additionalParams: [String:String]?
 
     @objc public static func `default`() throws -> OktaOidcConfig {
@@ -38,6 +40,7 @@ public class OktaOidcConfig: NSObject, Codable {
         self.issuer = issuer
         self.scopes = scopes
         self.redirectUri = redirectUri
+        self.accountId = dict["accountId"]
         
         if  let logoutRedirectUriString = dict["logoutRedirectUri"] {
             logoutRedirectUri = URL(string: logoutRedirectUriString)
@@ -67,12 +70,13 @@ public class OktaOidcConfig: NSObject, Codable {
         // Parse the additional parameters to be passed to the /authorization endpoint
         var configCopy = config
         
-        // Remove "issuer", "clientId", "redirectUri", "scopes" and "logoutRedirectUri"
+        // Remove "issuer", "clientId", "redirectUri", "scopes", "logoutRedirectUri" and "accountId"
         configCopy.removeValue(forKey: "issuer")
         configCopy.removeValue(forKey: "clientId")
         configCopy.removeValue(forKey: "redirectUri")
         configCopy.removeValue(forKey: "scopes")
         configCopy.removeValue(forKey: "logoutRedirectUri")
+        configCopy.removeValue(forKey: "accountId")
         
         return configCopy
     }
