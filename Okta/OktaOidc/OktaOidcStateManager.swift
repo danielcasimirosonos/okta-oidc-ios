@@ -17,6 +17,7 @@ open class OktaOidcStateManager: NSObject, NSSecureCoding {
     public static var supportsSecureCoding = true
 
     @objc open var authState: OIDAuthState
+    @objc open var accountId: String?
     @objc open var accessibility: CFString
 
     @objc open var accessToken: String? {
@@ -55,9 +56,10 @@ open class OktaOidcStateManager: NSObject, NSSecureCoding {
     // Needed for UTs only. Entry point for mocking network calls.
     var restAPI: OktaOidcHttpApiProtocol = OktaOidcRestApi()
 
-    @objc public init(authState: OIDAuthState, accessibility: CFString = kSecAttrAccessibleWhenUnlockedThisDeviceOnly) {
+    @objc public init(authState: OIDAuthState, accessibility: CFString = kSecAttrAccessibleWhenUnlockedThisDeviceOnly, accountId: String? = nil) {
         self.authState = authState
         self.accessibility = accessibility
+        self.accountId = accountId
         OktaOidcConfig.setupURLSession()
         
         super.init()
@@ -70,13 +72,15 @@ open class OktaOidcStateManager: NSObject, NSSecureCoding {
         
         self.init(
             authState: state,
-            accessibility: decoder.decodeObject(forKey: "accessibility") as! CFString
+            accessibility: decoder.decodeObject(forKey: "accessibility") as! CFString,
+            accountId: decoder.decodeObject(forKey: "accountId") as? String
         )
     }
 
     @objc public func encode(with coder: NSCoder) {
         coder.encode(self.authState, forKey: "authState")
         coder.encode(self.accessibility, forKey: "accessibility")
+        coder.encode(self.accountId, forKey: "accountId")
     }
 
     @objc public func validateToken(idToken: String?) -> Error? {
@@ -147,7 +151,7 @@ open class OktaOidcStateManager: NSObject, NSSecureCoding {
     }
 
     @objc public func removeFromSecureStorage() throws {
-        try OktaOidcKeychain.remove(key: self.clientId)
+        try OktaOidcKeychain.remove(key: SecureStorageKey(stateManager: self).string)
     }
     
     @objc public func clear() {
@@ -169,6 +173,28 @@ open class OktaOidcStateManager: NSObject, NSSecureCoding {
 }
 
 @objc public extension OktaOidcStateManager {
+    private struct SecureStorageKey {
+        let clientId: String
+        let accountId: String?
+
+        init(config: OktaOidcConfig) {
+            self.clientId = config.clientId
+            self.accountId = config.accountId
+        }
+
+        init(stateManager: OktaOidcStateManager) {
+            self.clientId = stateManager.clientId
+            self.accountId = stateManager.accountId
+        }
+
+        var string: String {
+            guard let accountId = accountId else {
+                return clientId
+            }
+
+            return "\(clientId) - accountId: \(accountId)"
+        }
+    }
 
     @available(*, deprecated, message: "Please use readFromSecureStorage(for config: OktaOidcConfig) function")
     class func readFromSecureStorage() -> OktaOidcStateManager? {
@@ -176,7 +202,9 @@ open class OktaOidcStateManager: NSObject, NSSecureCoding {
     }
 
     @objc class func readFromSecureStorage(for config: OktaOidcConfig) -> OktaOidcStateManager? {
-        return readFromSecureStorage(forKey: config.clientId)
+        let stateManager = readFromSecureStorage(forKey: SecureStorageKey(config: config).string)
+        stateManager?.accountId = config.accountId
+        return stateManager
     }
     
     @objc func writeToSecureStorage() {
@@ -189,7 +217,7 @@ open class OktaOidcStateManager: NSObject, NSSecureCoding {
             }
 
             try OktaOidcKeychain.set(
-                key: self.clientId,
+                key: SecureStorageKey(stateManager: self).string,
                 data: authStateData,
                 accessibility: self.accessibility
             )
