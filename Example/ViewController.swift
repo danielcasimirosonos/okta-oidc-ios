@@ -31,18 +31,26 @@ class ViewController: UIViewController {
     }
     
     private var testConfig: OktaOidcConfig? {
+//        return try? OktaOidcConfig(with:[
+//            "issuer": ProcessInfo.processInfo.environment["ISSUER"]!,
+//            "clientId": ProcessInfo.processInfo.environment["CLIENT_ID"]!,
+//            "redirectUri": ProcessInfo.processInfo.environment["REDIRECT_URI"]!,
+//            "logoutRedirectUri": ProcessInfo.processInfo.environment["LOGOUT_REDIRECT_URI"]!,
+//            "scopes": "openid profile offline_access"
+//        ])
         return try? OktaOidcConfig(with:[
-            "issuer": ProcessInfo.processInfo.environment["ISSUER"]!,
-            "clientId": ProcessInfo.processInfo.environment["CLIENT_ID"]!,
-            "redirectUri": ProcessInfo.processInfo.environment["REDIRECT_URI"]!,
-            "logoutRedirectUri": ProcessInfo.processInfo.environment["LOGOUT_REDIRECT_URI"]!,
-            "scopes": "openid profile offline_access"
+            "scopes": "identity-read-basic identity-write-creds password-reset-complete verify-email-complete add-player remove-player hh-config hh-config-admin partner-auth playback-control-all offline_access openid email profile",
+            "redirectUri": "sonos-2://okta-redirect",
+            "clientId": "6b673d4b-1435-4a92-b605-4f996cff6889",
+            "issuer": "https://login-int.sonos.com/oauth2/ausqt4iaqb0qQE1nt0h7",
+            "logoutRedirectUri": "sonos-2://okta-redirect",
+            "nav": "registration",
         ])
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        oktaAppAuth = try? OktaOidc(configuration: isUITest ? testConfig : nil)
+        oktaAppAuth = try? OktaOidc(configuration: testConfig)
         AppDelegate.shared.oktaOidc = oktaAppAuth
         
         if let config = oktaAppAuth?.configuration {
